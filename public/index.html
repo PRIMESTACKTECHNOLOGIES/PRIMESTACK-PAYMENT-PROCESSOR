@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRIMESTACK PAYMENT PROCESSOR - Merchant Portal</title>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --muted: #64748b; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; max-width: 1100px; margin-bottom: 20px; }
+        .stat-box { background: white; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+        .stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; margin-top: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
+        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .badge { padding: 4px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; }
+        .bg-success { background: #dcfce7; color: #166534; }
+        .bg-error { background: #fee2e2; color: #991b1b; }
+        .bg-warning { background: #fef9c3; color: #854d0e; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        th { color: var(--muted); font-weight: 600; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 350px; }
+        .tabs { display: flex; gap: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
+        .tab { padding: 10px 0; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+        .stripe-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--muted); margin-top: 10px; }
+        .eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--muted); background: none; border: none; padding: 5px; width: auto; }
+        .stripe-element-wrapper { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; background: white; }
+        .stripe-element-wrapper.StripeElement--focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+        .stripe-element-wrapper.StripeElement--invalid { border-color: var(--error); }
+        #stripe-card-errors { color: var(--error); font-size: 0.78rem; margin-top: 6px; min-height: 18px; }
+        .nfc-btn { background: linear-gradient(135deg, #7c3aed, #4f46e5); border-radius: 8px; padding: 14px; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .nfc-btn:hover:not(:disabled) { background: linear-gradient(135deg, #6d28d9, #4338ca); }
+        .nfc-wave { display: inline-block; animation: wave 1.2s infinite ease-in-out; }
+        @keyframes wave { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+        .nfc-panel { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 15px; margin-top: 12px; display: none; }
+        .nfc-status { font-size: 0.85rem; text-align: center; color: #6d28d9; font-weight: 600; margin: 8px 0; }
+        .entry-mode-badge { display: inline-flex; align-items: center; gap: 4px; background: #ede9fe; color: #5b21b6; border-radius: 6px; padding: 3px 8px; font-size: 0.72rem; font-weight: 600; }
+        .divider { text-align: center; color: var(--muted); font-size: 0.78rem; margin: 14px 0; position: relative; }
+        .divider::before,.divider::after { content:''; position:absolute; top:50%; width:42%; height:1px; background:#e2e8f0; }
+        .divider::before { left:0; } .divider::after { right:0; }
+    </style>
+</head>
+<body>
+    <div class="stats">
+        <div class="stat-box"><div class="stat-label">Total Revenue</div><div class="stat-value" id="stat-total">$0.00</div></div>
+        <div class="stat-box"><div class="stat-label">Available</div><div class="stat-value" id="stat-avail" style="color: var(--success);">$0.00</div></div>
+        <div class="stat-box"><div class="stat-label">Merchant ID</div><div class="stat-value" id="stat-merch" style="font-size: 0.9rem; color: var(--muted);">---</div></div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h3>Terminal</h3>
+            <form id="payForm">
+                <div class="form-group">
+                    <label>💳 Type Card Details Below</label>
+                    <div id="stripe-card-element" class="stripe-element-wrapper"></div>
+                    <div id="stripe-card-errors"></div>
+                </div>
+                <div class="form-group"><label>Currency</label><select id="currency"><option value="AED">AED (UAE Dirham)</option><option value="USD">USD (US Dollar)</option><option value="EUR">EUR (Euro)</option><option value="GBP">GBP (British Pound)</option><option value="SAR">SAR (Saudi Riyal)</option><option value="INR">INR (Indian Rupee)</option></select></div>
+                <div class="form-group"><label>Amount</label><input type="number" id="amt" placeholder="10.00" step="0.01" min="0.50" required></div>
+                <div class="form-group"><label>Customer Email <small style="font-weight:400;color:#94a3b8">(optional — builds bank trust)</small></label><input type="email" id="customerEmail" placeholder="customer@email.com"></div>
+                <button type="submit" id="payBtn">💳 Charge Typed Card</button>
+                <div class="stripe-badge">🔒 Type card above → Click "Charge Typed Card"&nbsp;&nbsp;|&nbsp;&nbsp;For NFC tap → use button below</div>
+            </form>
+
+            <!-- ── NFC / Tap to Pay ────────────────────────────────────── -->
+            <div class="divider">— or tap card on reader —</div>
+
+            <!-- ── NFC Reader Status Bar ── -->
+            <div id="nfcReaderBar" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;margin-bottom:10px;">
+                <span id="nfcReaderDot" style="width:8px;height:8px;border-radius:50%;background:#d1d5db;flex-shrink:0;"></span>
+                <span id="nfcReaderLabel" style="font-size:0.78rem;color:#6d28d9;flex:1;">NFC Reader: checking…</span>
+                <span id="nfcReaderName" style="font-size:0.7rem;color:#94a3b8;"></span>
+            </div>
+
+            <button id="nfcBtn" class="nfc-btn" type="button">
+                <span id="nfcBtnIcon" class="nfc-wave">📡</span> <span id="nfcBtnText">Tap to Pay (NFC)</span>
+            </button>
+            <div class="nfc-panel" id="nfcPanel">
+                <div class="nfc-status" id="nfcStatus">Ready to scan NFC card…</div>
+
+                <!-- Hardware reader section (shown when ACR122U is connected) -->
+                <div id="nfcHardwareSection" style="display:none;text-align:center;padding:10px 0;">
+                    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;">
+                        Hold your contactless card near the <strong>ACS ACR122U</strong> reader
+                    </div>
+                    <button type="button" id="nfcReadBtn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);width:auto;padding:10px 24px;">
+                        📡 Read Card Now
+                    </button>
+                    <div id="nfcCardPreview" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px;">
+                        <div id="nfcCardLine" style="font-weight:600;font-size:0.9rem;color:#166534;"></div>
+                        <button type="button" id="nfcPayNowBtn" style="background:#16a34a;margin-top:8px;padding:8px 20px;width:auto;">⚡ Charge This Card</button>
+                    </div>
+                </div>
+
+                <!-- Manual fallback (shown when no reader, or for testing) -->
+                <div id="nfcManualForm">
+                    <div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#5b21b6;">
+                        📲 Manual / Simulate NFC Tap
+                    </div>
+                    <div class="form-group">
+                        <label>NFC Entry Method</label>
+                        <select id="nfcEntryMethod">
+                            <option value="nfc">NFC Tap (Contactless Chip)</option>
+                            <option value="msd">NFC Magnetic Stripe</option>
+                            <option value="apple_pay">Apple Pay</option>
+                            <option value="google_pay">Google Pay</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Card Number or Token</label>
+                        <input type="text" id="nfcCardNum" placeholder="4111 1111 1111 1111" maxlength="19">
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <div class="form-group" style="flex:1;">
+                            <label>Expiry (MMYY)</label>
+                            <input type="text" id="nfcExpiry" placeholder="1225" maxlength="4">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>CVM / CVV <small style="font-weight:400">(optional)</small></label>
+                            <input type="text" id="nfcCvv" placeholder="tap cards often skip" maxlength="4">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Terminal ID <small style="font-weight:400">(optional)</small></label>
+                        <input type="text" id="nfcTerminalId" placeholder="TERM_001">
+                    </div>
+                    <button type="button" id="nfcSubmitBtn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+                        ⚡ Process NFC Payment
+                    </button>
+                </div>
+
+                <div id="nfcResult" style="margin-top:12px;padding:10px;border-radius:6px;display:none;font-size:0.85rem;"></div>
+                <div style="margin-top:10px;text-align:center;">
+                    <button type="button" id="nfcCloseBtn" style="background:#f1f5f9;color:var(--text);border:1px solid #e2e8f0;width:auto;padding:5px 14px;font-size:0.8rem;">Close</button>
+                </div>
+            </div>
+
+            <div id="payResult" style="margin-top: 15px; padding: 10px; border-radius: 6px; display: none; font-size: 0.85rem;"></div>
+        </div>
+
+        <div class="card" id="dash" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <button id="backBtn" style="width: auto; background: #f1f5f9; color: var(--text); padding: 6px 15px; border: 1px solid #e2e8f0;">← Back to Payment</button>
+                <button id="logoutBtn" style="width: auto; background: var(--error); color: white; padding: 6px 15px; border: none;">Logout</button>
+            </div>
+            <div class="tabs"><div class="tab active" data-t="history">History</div><div class="tab" data-t="payouts">Payouts</div><div class="tab" data-t="settings">Settings</div></div>
+            <div id="history">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="margin: 0;">Recent Transactions</h4>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="payoutBtn" style="width: auto; background: var(--success); padding: 6px 15px;">Cashout</button>
+                        <button id="refreshBtn" style="width: auto; background: #f1f5f9; color: var(--text); padding: 6px 15px; border: 1px solid #e2e8f0;">Refresh</button>
+                    </div>
+                </div>
+                <table id="txnTable">
+                    <thead><tr><th>Date</th><th>Card</th><th>Amount</th><th>Method</th><th>Status</th><th>Settle</th></tr></thead>
+                    <tbody id="txnBody"></tbody>
+                </table>
+            </div>
+            <div id="payouts" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="margin: 0;">Payout History</h4>
+                </div>
+                <table id="payoutTable">
+                    <thead><tr><th>Date</th><th>Payout ID</th><th>Amount</th><th>Bank</th><th>Status</th><th>Txns</th></tr></thead>
+                    <tbody id="payoutBody"></tbody>
+                </table>
+            </div>
+            <div id="settings" style="display: none;">
+                <div style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+                    <h4>Merchant Settings</h4>
+                    <div class="form-group"><label>Bank Name</label><input type="text" id="setBank" placeholder="e.g. Global Reserve Bank"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 2;"><label>IBAN / Account Number</label><input type="text" id="setAcc" placeholder="IBAN or Account No."></div>
+                        <div class="form-group" style="flex: 1;"><label>SWIFT / BIC</label><input type="text" id="setSwift" placeholder="SWIFT Code"></div>
+                    </div>
+                    <div class="form-group"><label>Account Holder Name</label><input type="text" id="setHolder" placeholder="Legal Entity Name"></div>
+                    <button id="saveSetBtn">Update Payout Details</button>
+                </div>
+
+                <div style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+                    <h4>🔐 API Key Management</h4>
+                    <div class="form-group" style="background: #f8fafc; padding: 15px; border-radius: 8px;">
+                        <label style="color: var(--text);">Current API Key</label>
+                        <div style="font-family: 'Consolas', monospace; background: white; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 10px;">
+                            <span id="api-key-display">••••••••••••</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="show-api-key" style="background: #f1f5f9; color: var(--text); border: 1px solid #e2e8f0; width: auto;">👁️ Show Key</button>
+                            <button id="copy-api-key" style="background: var(--primary); width: auto;">📋 Copy</button>
+                            <button id="save-api-key" style="background: #2563eb; width: auto;">💾 Save Key</button>
+                            <button id="generate-new-key" style="background: #059669; width: auto;">🔑 Generate New Key</button>
+                            <button id="rotate-key" style="background: #f59e0b; width: auto;">🔄 Rotate Key</button>
+                            <button id="deactivate-key" style="background: #dc2626; width: auto;">❌ Deactivate</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <label style="font-size: 0.85rem;">Key Expiry (days, leave empty for never):</label>
+                        <input type="number" id="key-expiry-days" min="1" max="365" placeholder="e.g., 30">
+                    </div>
+                </div>
+
+                <!-- ── PRIMESTACK Merchant Keys Section ── -->
+                <div style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+                    <h4>🏪 PRIMESTACK Merchant Keys</h4>
+                    <p style="font-size:0.82rem; color:var(--muted); margin-bottom:12px;">
+                        These are the keys you issue to your merchants. Each merchant gets their own <code style="background:#f1f5f9;padding:2px 5px;border-radius:3px">ps_pub_</code> and <code style="background:#f1f5f9;padding:2px 5px;border-radius:3px">ps_sec_</code> key pair.
+                    </p>
+
+                    <!-- Register New Merchant -->
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-bottom:14px;">
+                        <div style="font-weight:600; font-size:0.85rem; margin-bottom:10px;">➕ Register New Merchant</div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                            <div style="flex:2; min-width:140px;">
+                                <label style="font-size:0.72rem;">Business Name *</label>
+                                <input type="text" id="mk-biz" placeholder="Coffee Shop Ltd" style="padding:7px 10px; font-size:0.83rem;">
+                            </div>
+                            <div style="flex:2; min-width:140px;">
+                                <label style="font-size:0.72rem;">Email *</label>
+                                <input type="email" id="mk-email" placeholder="owner@shop.com" style="padding:7px 10px; font-size:0.83rem;">
+                            </div>
+                            <div style="flex:1; min-width:80px;">
+                                <label style="font-size:0.72rem;">Currency</label>
+                                <select id="mk-currency" style="padding:7px 10px; font-size:0.83rem;">
+                                    <option>USD</option><option>EUR</option><option>GBP</option>
+                                    <option>AED</option><option>SAR</option><option>INR</option>
+                                    <option>CAD</option><option>AUD</option><option>SGD</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:80px;">
+                                <label style="font-size:0.72rem;">Fee %</label>
+                                <input type="number" id="mk-fee" value="1.0" step="0.1" min="0" max="10" style="padding:7px 10px; font-size:0.83rem;">
+                            </div>
+                        </div>
+                        <button id="mk-register-btn" style="background:#059669; padding:8px; font-size:0.83rem;">Register Merchant &amp; Get Keys</button>
+                    </div>
+
+                    <!-- New keys display (shown after registration) -->
+                    <div id="mk-keys-result" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:15px; margin-bottom:14px;">
+                        <div style="font-weight:600; color:#166534; margin-bottom:10px;">✅ Merchant Registered — Save these keys now!</div>
+                        <div style="margin-bottom:8px;">
+                            <label style="font-size:0.72rem; color:#166534;">PUBLISHABLE KEY — give to merchant for their Android app / frontend</label>
+                            <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+                                <div id="mk-pub-display" style="font-family:Consolas,monospace; font-size:0.72rem; background:white; border:1px solid #bbf7d0; border-radius:4px; padding:8px 10px; flex:1; word-break:break-all; color:#166534;"></div>
+                                <button onclick="copyMerchantKey('mk-pub-display')" style="width:auto; padding:6px 10px; background:#16a34a; font-size:0.75rem;">Copy</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem; color:#b45309;">SECRET KEY — give to merchant for their server only, never in the app</label>
+                            <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+                                <div id="mk-sec-display" style="font-family:Consolas,monospace; font-size:0.72rem; background:white; border:1px solid #fed7aa; border-radius:4px; padding:8px 10px; flex:1; word-break:break-all; color:#b45309;"></div>
+                                <button onclick="copyMerchantKey('mk-sec-display')" style="width:auto; padding:6px 10px; background:#d97706; font-size:0.75rem;">Copy</button>
+                            </div>
+                        </div>
+                        <div style="font-size:0.72rem; color:#991b1b; margin-top:8px;">⚠️ The secret key will never be shown again. Copy it now.</div>
+                    </div>
+
+                    <!-- Existing merchants list -->
+                    <div id="mk-list-wrap">
+                        <div style="font-weight:600; font-size:0.85rem; margin-bottom:8px;">Your Merchants</div>
+                        <div id="mk-list" style="font-size:0.82rem; color:var(--muted);">Loading...</div>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-top:12px;">
+                        <button onclick="loadMerchantKeys()" style="background:#f1f5f9; color:var(--text); border:1px solid #e2e8f0; width:auto; padding:7px 14px; font-size:0.8rem;">🔄 Refresh List</button>
+                        <button onclick="window.open('/admin','_blank')" style="background:var(--primary); width:auto; padding:7px 14px; font-size:0.8rem;">⚙️ Open Admin Panel</button>
+                        <button onclick="window.open('/portal','_blank')" style="background:#7c3aed; width:auto; padding:7px 14px; font-size:0.8rem;">🏪 Open Merchant Portal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="loginScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; padding: 40px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 4rem; margin-bottom: 10px;">💳</div>
+                <h1 style="margin: 0; color: var(--primary); font-size: 2rem;">PRIMESTACK</h1>
+                <h2 style="margin: 5px 0 0 0; color: var(--text); font-size: 1.5rem;">PAYMENT PROCESSOR</h2>
+                <p style="margin-top: 15px; color: var(--muted); font-size: 0.9rem;">Merchant Dashboard Login</p>
+            </div>
+            
+            <div style="width: 100%; max-width: 350px;">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" placeholder="Admin or Merchant">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-row">
+                        <input type="password" id="password" placeholder="Admin123">
+                        <button class="eye" id="toggleKey">👁️</button>
+                    </div>
+                    <div id="loginErr" style="color: var(--error); font-size: 0.75rem; margin-top: 5px; display: none;"></div>
+                </div>
+                <button id="doLoginBtn" style="margin-top: 10px;">Login to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        let key = '';
+        let stripe = null;
+        let elements = null;
+        let cardElement = null;
+        let PUBLISHABLE_KEY = '';
+        let currentClientId = '';
+        let currentClientSecret = '';
+        let apiKeyVisible = false;
+        let clientSecretVisible = false;
+        let pendingPaymentIntentId = null; // track open PI so we can cancel on abandon
+        const $ = id => document.getElementById(id);
+
+        async function initStripe() {
+            try {
+                const resp = await fetch('/api/config');
+                const cfg = await resp.json();
+                PUBLISHABLE_KEY = cfg.stripePublishableKey;
+                if (!PUBLISHABLE_KEY) {
+                    $('stripe-card-element').innerHTML = '<p style="color:#dc2626;font-size:0.8rem;">Stripe not configured on server.</p>';
+                    return;
+                }
+                stripe = Stripe(PUBLISHABLE_KEY);
+                elements = stripe.elements();
+                cardElement = elements.create('card', { style: { base: {} } });
+                cardElement.mount('#stripe-card-element');
+            } catch (err) {
+                console.error('[STRIPE] Failed to initialise:', err.message);
+            }
+        }
+
+        const getApiHeaders = () => {
+            const headers = { 'x-api-key': key };
+            if (currentClientId) headers['x-client-id'] = currentClientId;
+            if (currentClientSecret) headers['x-client-secret'] = currentClientSecret;
+            return headers;
+        };
+
+        async function loadData() {
+            try {
+                const sR = await fetch('/api/settings', { headers: getApiHeaders() });
+                if (sR.status === 403) return 'Invalid Key';
+                if (!sR.ok) return 'Server Error';
+                const settings = await sR.json();
+                // accountNumber comes from old merchants table, id from new ps_merchants
+                const merchantId = settings.accountNumber || settings.account_number || settings.id || '—';
+                $('stat-merch').innerText = merchantId;
+                $('setAcc').value = settings.accountNumber || settings.iban || '';
+                $('setBank').value = settings.bankName || '';
+                $('setSwift').value = settings.swift || '';
+                $('setHolder').value = settings.accountHolder || '';
+
+                const tR = await fetch('/api/transactions', { headers: getApiHeaders() });
+                const txns = await tR.json();
+                let total = 0, avail = 0;
+                $('txnBody').innerHTML = '';
+                txns.reverse().forEach(t => {
+                    const a = parseFloat(t.amount);
+                    const currency = t.currency || 'AED';
+                    const currencySymbols = { AED: 'د.إ', USD: '$', EUR: '€', GBP: '£', SAR: 'ر.س', INR: '₹' };
+                    const symbol = currencySymbols[currency] || currency + ' ';
+                    if (t.status === 'Approved') { total += a; if (t.settlementStatus === 'Settled') avail += a; }
+                    const cardLabel = (t.cardType || t.brand || 'Card') + ' (*' + (t.lastFour || t.last_four || '****') + ')';
+                    const isReal = t.paymentIntentId && t.paymentIntentId.startsWith('pi_');
+                    const source = isReal ? '' : '<span style="font-size:0.65rem;color:#94a3b8;margin-left:4px">[test]</span>';
+                    const nfcModes = {'07':'📡 NFC','91':'📡 NFC-MSD','10':'📲 Wallet'};
+                    const methodBadge = t.entryMode && nfcModes[t.entryMode]
+                        ? `<span class="entry-mode-badge">${nfcModes[t.entryMode]}</span>`
+                        : `<span style="font-size:0.72rem;color:var(--muted)">💳 Card</span>`;
+                    const row = `<tr><td>${new Date(t.timestamp).toLocaleDateString()}</td><td>${cardLabel}${source}</td><td>${symbol}${a.toFixed(2)}</td><td>${methodBadge}</td><td><span class="badge ${t.status === 'Approved' ? 'bg-success' : 'bg-error'}">${t.status}</span></td><td><span class="badge ${t.settlementStatus === 'Paid Out' ? 'bg-success' : 'bg-warning'}">${t.settlementStatus}</span></td></tr>`;
+                    $('txnBody').innerHTML += row;
+                });
+                $('stat-total').innerText = `$${total.toFixed(2)}`;
+                $('stat-avail').innerText = `$${avail.toFixed(2)}`;
+                
+                await loadPayouts();
+                return null;
+            } catch (e) { return 'Network error'; }
+        }
+
+        async function loadPayouts() {
+            try {
+                const pR = await fetch('/api/payouts', { headers: getApiHeaders() });
+                const data = await pR.json();
+                if (data.success && data.payouts) {
+                    $('payoutBody').innerHTML = '';
+                    data.payouts.forEach(p => {
+                        const statusClass = p.status === 'Completed' ? 'bg-success' : p.status === 'Failed' ? 'bg-error' : 'bg-warning';
+                        const row = `<tr><td>${new Date(p.createdAt).toLocaleDateString()}</td><td><small>${p.id}</small></td><td>$${p.amount.toFixed(2)}</td><td>${p.bankName || 'N/A'}</td><td><span class="badge ${statusClass}">${p.status}</span></td><td>${(p.transactionIds || []).length}</td></tr>`;
+                        $('payoutBody').innerHTML += row;
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load payouts:', e);
+            }
+        }
+
+        async function processPayment() {
+            const btn = $('payBtn');
+            const res = $('payResult');
+            const amount = $('amt').value;
+            const currency = $('currency').value;
+
+            // Guard: card element must be filled before attempting Stripe
+            if (!cardElement) {
+                $('stripe-card-errors').textContent = 'Card input not loaded — refresh the page.';
+                return;
+            }
+            if (!amount || parseFloat(amount) <= 0) {
+                $('stripe-card-errors').textContent = 'Enter an amount first.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+            res.style.display = 'none';
+            $('stripe-card-errors').textContent = '';
+
+            try {
+                const intentResp = await fetch('/api/create-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount,
+                        currency,
+                        email: $('customerEmail').value.trim() || null
+                    })
+                });
+                const intentData = await intentResp.json();
+                if (!intentData.success) throw new Error(intentData.message || 'Failed to create payment');
+
+                const { clientSecret, paymentIntentId } = intentData;
+                pendingPaymentIntentId = paymentIntentId; // track so we can cancel if user abandons
+
+                const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: { card: cardElement }
+                });
+
+                if (error) {
+                    // Cancel the incomplete PI on Stripe so dashboard stays clean
+                    fetch('/api/cancel-payment-intent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentIntentId })
+                    }).catch(() => {});
+                    pendingPaymentIntentId = null;
+
+                    $('stripe-card-errors').textContent = error.message;
+                    res.style.display = 'block';
+                    res.className = 'bg-error';
+                    let msg = error.message;
+                    if (error.code === 'card_declined') msg = 'Card declined by bank. Try a different card.';
+                    if (error.code === 'insufficient_funds') msg = 'Insufficient funds on this card.';
+                    if (error.code === 'expired_card') msg = 'Card has expired.';
+                    if (error.code === 'incorrect_cvc') msg = 'Incorrect security code (CVC).';
+                    if (error.code === 'do_not_honor') msg = 'Card declined by bank. Contact your bank or try a different card.';
+                    res.innerText = `❌ ${msg}`;
+                } else if (paymentIntent.status === 'succeeded') {
+                    pendingPaymentIntentId = null;
+                    await fetch('/api/record-payment-result', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentIntentId, amount, currency })
+                    });
+                    res.style.display = 'block';
+                    res.className = 'bg-success';
+                    res.innerText = `✅ Approved! TXN: ${paymentIntentId}`;
+                    $('amt').value = '';
+                    cardElement.clear();
+                    if ($('dash').style.display === 'block') loadData();
+                }
+            } catch (err) {
+                // Cancel any open PI if we hit an unexpected error
+                if (pendingPaymentIntentId) {
+                    fetch('/api/cancel-payment-intent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentIntentId: pendingPaymentIntentId })
+                    }).catch(() => {});
+                    pendingPaymentIntentId = null;
+                }
+                res.style.display = 'block';
+                res.className = 'bg-error';
+                res.innerText = `Error: ${err.message || 'Connection error'}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Charge Card';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initStripe();
+
+            $('toggleKey').onclick = () => {
+                const t = $('password').type === 'password' ? 'text' : 'password';
+                $('password').type = t;
+                $('toggleKey').innerText = t === 'password' ? '👁️' : '🙈';
+            };
+
+            $('doLoginBtn').onclick = async () => {
+                const username = $('username').value.trim();
+                const password = $('password').value.trim();
+                $('loginErr').style.display = 'none';
+                $('doLoginBtn').disabled = true;
+                $('doLoginBtn').innerText = 'Logging in...';
+                key = password;
+                const err = await loadData();
+                if (!err) {
+                    $('loginScreen').style.display = 'none';
+                    $('dash').style.display = 'block';
+                } else {
+                    $('loginErr').innerText = err;
+                    $('loginErr').style.display = 'block';
+                }
+                $('doLoginBtn').disabled = false;
+                $('doLoginBtn').innerText = 'Login to Dashboard';
+            };
+
+            $('backBtn').onclick = () => {
+                $('dash').style.display = 'none';
+                $('loginScreen').style.display = 'flex';
+            };
+
+            $('logoutBtn').onclick = () => {
+                key = '';
+                $('dash').style.display = 'none';
+                $('loginScreen').style.display = 'flex';
+                $('username').value = '';
+                $('password').value = '';
+                alert('Logged out successfully!');
+            };
+
+            $('payForm').onsubmit = async (e) => {
+                e.preventDefault();
+                await processPayment();
+            };
+
+            $('refreshBtn').onclick = loadData;
+
+            $('payoutBtn').onclick = async () => {
+                if (!confirm('Cashout all available funds?')) return;
+                const btn = $('payoutBtn');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = 'Processing...';
+                try {
+                    const r = await fetch('/api/request-payout', { method: 'POST', headers: getApiHeaders() });
+                    const d = await r.json();
+                    alert(d.message || 'Payout initiated successfully!');
+                    loadData();
+                } catch (e) {
+                    alert('Error processing payout: ' + e.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            };
+
+            $('saveSetBtn').onclick = async () => {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+                    body: JSON.stringify({
+                        accountNumber: $('setAcc').value,
+                        bankName: $('setBank').value,
+                        swift: $('setSwift').value,
+                        accountHolder: $('setHolder').value
+                    })
+                });
+                alert('Settings Updated!');
+                loadData();
+            };
+
+            document.querySelectorAll('.tab').forEach(t => t.onclick = async () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                t.classList.add('active');
+                $('history').style.display = t.dataset.t === 'history' ? 'block' : 'none';
+                $('payouts').style.display = t.dataset.t === 'payouts' ? 'block' : 'none';
+                $('settings').style.display = t.dataset.t === 'settings' ? 'block' : 'none';
+                
+                if (t.dataset.t === 'settings') {
+                    try {
+                        const apiKeyResponse = await fetch('/api/api-keys/current', { headers: getApiHeaders() });
+                        const apiKeyData = await apiKeyResponse.json();
+                        if (apiKeyData.success && apiKeyData.apiKey) key = apiKeyData.apiKey;
+                    } catch (e) {
+                        console.error('Failed to load settings:', e);
+                    }
+                    $('api-key-display').innerText = '••••••••••••';
+                    apiKeyVisible = false;
+                    loadMerchantKeys();
+                }
+            });
+
+            $('show-api-key').onclick = () => {
+                if (apiKeyVisible) {
+                    $('api-key-display').innerText = '••••••••••••';
+                    $('show-api-key').innerText = '👁️ Show Key';
+                } else {
+                    $('api-key-display').innerText = key;
+                    $('show-api-key').innerText = '🙈 Hide Key';
+                }
+                apiKeyVisible = !apiKeyVisible;
+            };
+
+            $('copy-api-key').onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(key);
+                    alert('✅ API Key copied to clipboard!');
+                } catch (e) {
+                    alert('Failed to copy. Please copy manually: ' + key);
+                }
+            };
+
+            $('save-api-key').onclick = async () => {
+                try {
+                    const response = await fetch('/api/api-keys/current', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+                        body: JSON.stringify({ key })
+                    });
+                    const data = await response.json();
+                    if (data.success) alert('✅ API Key saved successfully!');
+                    else alert('❌ Failed to save API key: ' + (data.message || 'Unknown error'));
+                } catch (e) {
+                    alert('Error saving API key: ' + e.message);
+                }
+            };
+
+            $('generate-new-key').onclick = async () => {
+                if (!confirm('Generate a new API key? This won\'t affect the current key.')) return;
+                const expiresInDays = $('key-expiry-days').value ? parseInt($('key-expiry-days').value) : null;
+                try {
+                    const resp = await fetch('/api/api-keys/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+                        body: JSON.stringify({ expiresInDays })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        key = data.apiKey;
+                        $('api-key-display').innerText = key;
+                        apiKeyVisible = true;
+                        $('show-api-key').innerText = '🙈 Hide Key';
+                        alert('✅ New API key generated! Key: ' + data.apiKey);
+                    } else alert('❌ Failed to generate key');
+                } catch (e) { alert('Error: ' + e.message); }
+            };
+
+            $('rotate-key').onclick = async () => {
+                if (!confirm('Rotate API key? This will deactivate the current key.')) return;
+                try {
+                    const resp = await fetch('/api/api-keys/rotate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+                        body: JSON.stringify({ oldKey: key })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        key = data.apiKey;
+                        $('api-key-display').innerText = key;
+                        apiKeyVisible = true;
+                        $('show-api-key').innerText = '🙈 Hide Key';
+                        alert('✅ Key rotated!');
+                    } else alert('❌ Failed to rotate key');
+                } catch (e) { alert('Error: ' + e.message); }
+            };
+
+            $('deactivate-key').onclick = async () => {
+                if (!confirm('Deactivate the current API key?')) return;
+                try {
+                    const resp = await fetch('/api/api-keys/deactivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+                        body: JSON.stringify({ key })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        alert('✅ API key deactivated!');
+                        key = '';
+                        $('dash').style.display = 'none';
+                        $('loginScreen').style.display = 'flex';
+                    } else alert('❌ Failed to deactivate key');
+                } catch (e) { alert('Error: ' + e.message); }
+            };
+
+            // ── Merchant Keys ────────────────────────────────────────────────
+            async function loadMerchantKeys() {
+                const mkList = $('mk-list');
+                if (!mkList) return;
+                try {
+                    const r = await fetch('/api/merchants', { headers: getApiHeaders() });
+                    const data = await r.json();
+                    if (!data.success || !data.merchants || data.merchants.length === 0) {
+                        mkList.innerHTML = '<span style="color:var(--muted)">No merchants yet. Register your first merchant above.</span>';
+                        return;
+                    }
+                    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.8rem">';
+                    html += '<tr style="border-bottom:1px solid #e2e8f0"><th style="padding:6px 8px;text-align:left;color:var(--muted)">Business</th><th style="padding:6px 8px;text-align:left;color:var(--muted)">Email</th><th style="padding:6px 8px;text-align:left;color:var(--muted)">Currency</th><th style="padding:6px 8px;text-align:left;color:var(--muted)">Pub Key Preview</th><th style="padding:6px 8px;text-align:left;color:var(--muted)">Status</th><th style="padding:6px 8px;text-align:left;color:var(--muted)">Actions</th></tr>';
+                    data.merchants.forEach(m => {
+                        const statusColor = m.status === 'active' ? '#166534' : '#991b1b';
+                        const statusBg = m.status === 'active' ? '#dcfce7' : '#fee2e2';
+                        html += `<tr style="border-bottom:1px solid #f1f5f9">
+                            <td style="padding:8px">${m.business_name}</td>
+                            <td style="padding:8px;color:var(--muted)">${m.email}</td>
+                            <td style="padding:8px">${m.currency}</td>
+                            <td style="padding:8px;font-family:Consolas,monospace;font-size:0.7rem;color:#2563eb">${m.publishable_key_preview || '—'}</td>
+                            <td style="padding:8px"><span style="background:${statusBg};color:${statusColor};padding:2px 7px;border-radius:99px;font-size:0.68rem;font-weight:600">${m.status}</span></td>
+                            <td style="padding:8px">
+                                <button onclick="rotateKeyFor('${m.id}')" style="width:auto;padding:4px 10px;font-size:0.72rem;background:#f59e0b">Rotate Keys</button>
+                            </td>
+                        </tr>`;
+                    });
+                    html += '</table>';
+                    mkList.innerHTML = html;
+                } catch(e) {
+                    mkList.innerHTML = '<span style="color:var(--error)">Failed to load: ' + e.message + '</span>';
+                }
+            }
+
+            async function rotateKeyFor(merchantId) {
+                if (!confirm('Rotate keys for this merchant? Their old keys will be invalidated immediately.')) return;
+                try {
+                    const r = await fetch('/api/merchants/' + merchantId + '/rotate-keys', {
+                        method: 'POST',
+                        headers: getApiHeaders()
+                    });
+                    const data = await r.json();
+                    if (data.success) {
+                        $('mk-pub-display').textContent = data.keys.publishableKey;
+                        $('mk-sec-display').textContent = data.keys.secretKey;
+                        $('mk-keys-result').style.display = 'block';
+                        $('mk-keys-result').scrollIntoView({ behavior: 'smooth' });
+                        loadMerchantKeys();
+                    } else alert('❌ Failed: ' + (data.message || 'Unknown error'));
+                } catch(e) { alert('Error: ' + e.message); }
+            }
+
+            window.copyMerchantKey = (elId) => {
+                const text = $(elId).textContent.trim();
+                navigator.clipboard.writeText(text)
+                    .then(() => alert('✅ Copied!'))
+                    .catch(() => prompt('Copy this key:', text));
+            };
+
+            window.loadMerchantKeys = loadMerchantKeys;
+            window.rotateKeyFor = rotateKeyFor;
+
+            $('mk-register-btn').onclick = async () => {
+                const biz = $('mk-biz').value.trim();
+                const email = $('mk-email').value.trim();
+                if (!biz || !email) { alert('Business name and email are required'); return; }
+                const btn = $('mk-register-btn');
+                btn.disabled = true; btn.innerText = 'Registering...';
+                try {
+                    const r = await fetch('/api/merchants/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+                        body: JSON.stringify({
+                            businessName: biz,
+                            email: email,
+                            currency: $('mk-currency').value,
+                            platformFeePercent: parseFloat($('mk-fee').value) || 1.0,
+                            offlineEnabled: true,
+                            offlineLimit: 500,
+                            offlineDailyLimit: 2000
+                        })
+                    });
+                    const data = await r.json();
+                    if (data.success) {
+                        $('mk-pub-display').textContent = data.merchant.keys.publishableKey;
+                        $('mk-sec-display').textContent = data.merchant.keys.secretKey;
+                        $('mk-keys-result').style.display = 'block';
+                        $('mk-keys-result').scrollIntoView({ behavior: 'smooth' });
+                        $('mk-biz').value = '';
+                        $('mk-email').value = '';
+                        loadMerchantKeys();
+                    } else alert('❌ ' + (data.message || 'Registration failed'));
+                } catch(e) { alert('Error: ' + e.message); }
+                finally { btn.disabled = false; btn.innerText = 'Register Merchant & Get Keys'; }
+            };
+
+            // ── NFC / Tap to Pay — PC/SC WebSocket + Web NFC + Manual fallback ──
+            let nfcWs = null;
+            let nfcReaderConnected = false;
+            let nfcCardData = null; // card data received from hardware reader
+            let autoReadInProgress = false;
+
+            // ── WebSocket bridge to ACR122U ────────────────────────────────
+            function connectNfcWs() {
+                const wsUrl = `ws://${location.host}/nfc-ws`;
+                try {
+                    nfcWs = new WebSocket(wsUrl);
+                } catch(e) { return; }
+
+                nfcWs.onopen = () => {
+                    console.log('[NFC] WebSocket connected to PC/SC bridge');
+                };
+
+                nfcWs.onmessage = (evt) => {
+                    let msg;
+                    try { 
+                        console.log('[NFC] Raw WebSocket message:', evt.data);
+                        msg = JSON.parse(evt.data); 
+                        console.log('[NFC] Parsed message:', msg);
+                    } catch(e) { 
+                        console.error('[NFC] Failed to parse message:', e);
+                        return; 
+                    }
+
+                    if (msg.type === 'reader_status') {
+                        console.log('[NFC] Reader status:', msg.connected);
+                        nfcReaderConnected = msg.connected;
+                        updateReaderBar(msg.connected, msg.readerName);
+                        // Auto-start reading when connected and panel is open
+                        if (msg.connected && !autoReadInProgress && $('nfcPanel').style.display === 'block') {
+                            autoReadInProgress = true;
+                            setTimeout(() => $('nfcReadBtn').click(), 500);
+                        }
+                    }
+
+                    if (msg.type === 'reading') {
+                        console.log('[NFC] Reading state');
+                        $('nfcStatus').textContent = '🔍 ' + msg.message;
+                    }
+
+                    if (msg.type === 'card_data') {
+                        console.log('[NFC] Card data received:', msg);
+                        // Hardware reader returned card data
+                        nfcCardData = msg;
+                        $('nfcStatus').textContent = `✅ Card read: ${msg.brand} ****${msg.lastFour}`;
+                        $('nfcCardLine').textContent = `${msg.brand}  ****${msg.lastFour}  exp ${msg.expiry || '—'}`;
+                        $('nfcCardPreview').style.display = 'block';
+                        $('nfcReadBtn').disabled = false;
+                        $('nfcReadBtn').textContent = '📡 Read Another Card';
+                        // Auto-fill the manual form fields!
+                        console.log('[NFC] Attempting to autofill fields');
+                        console.log('[NFC] nfcCardNum element:', $('nfcCardNum'));
+                        console.log('[NFC] nfcExpiry element:', $('nfcExpiry'));
+                        if (msg.pan) {
+                            $('nfcCardNum').value = msg.pan.replace(/(.{4})/g, '$1 ').trim();
+                            console.log('[NFC] Set nfcCardNum to:', $('nfcCardNum').value);
+                        }
+                        if (msg.expiry) {
+                            $('nfcExpiry').value = msg.expiry;
+                            console.log('[NFC] Set nfcExpiry to:', $('nfcExpiry').value);
+                        }
+                        autoReadInProgress = false;
+                        // Auto-click charge button if amount is entered
+                        const amount = $('amt').value;
+                        if (amount && parseFloat(amount) > 0) {
+                            console.log('[NFC] Auto-clicking charge button');
+                            setTimeout(() => $('nfcPayNowBtn').click(), 500);
+                        }
+                    }
+
+                    if (msg.type === 'error') {
+                        console.log('[NFC] Error:', msg.message);
+                        $('nfcStatus').textContent = '⚠️ ' + msg.message;
+                        $('nfcReadBtn').disabled = false;
+                        $('nfcReadBtn').textContent = '📡 Try Again';
+                        autoReadInProgress = false;
+                    }
+                };
+
+                nfcWs.onclose = () => {
+                    nfcReaderConnected = false;
+                    updateReaderBar(false, null);
+                    // Reconnect every 5 s
+                    setTimeout(connectNfcWs, 5000);
+                };
+
+                nfcWs.onerror = () => { nfcWs.close(); };
+            }
+
+            function updateReaderBar(connected, readerName) {
+                const dot   = $('nfcReaderDot');
+                const label = $('nfcReaderLabel');
+                const name  = $('nfcReaderName');
+                const hwSec = $('nfcHardwareSection');
+                const manSec = $('nfcManualForm');
+
+                if (connected) {
+                    dot.style.background   = '#16a34a';
+                    label.style.color      = '#16a34a';
+                    label.textContent      = 'NFC Reader: connected ✓';
+                    name.textContent       = readerName || '';
+                    if (hwSec) hwSec.style.display = 'block';
+                    if (manSec) { manSec.style.borderTop='1px solid #e2e8f0'; manSec.style.paddingTop='12px'; manSec.style.marginTop='12px'; }
+                } else {
+                    dot.style.background   = '#d1d5db';
+                    label.style.color      = '#6d28d9';
+                    label.textContent      = 'NFC Reader: not detected — plug in ACS reader';
+                    name.textContent       = '';
+                    if (hwSec) hwSec.style.display = 'none';
+                }
+            }
+
+            // ── Hardware read button ───────────────────────────────────────
+            $('nfcReadBtn').onclick = () => {
+                if (!nfcWs || nfcWs.readyState !== WebSocket.OPEN) {
+                    $('nfcStatus').textContent = 'Reader bridge not connected — restart the server';
+                    return;
+                }
+                nfcCardData = null;
+                $('nfcCardPreview').style.display = 'none';
+                $('nfcReadBtn').disabled = true;
+                $('nfcReadBtn').textContent = '⏳ Reading…';
+                $('nfcStatus').textContent = '🔍 Tap card to the reader now…';
+                nfcWs.send(JSON.stringify({ type: 'read_card' }));
+            };
+
+            // ── Charge the hardware-read card ─────────────────────────────
+            $('nfcPayNowBtn').onclick = async () => {
+                if (!nfcCardData) return;
+                const amount = $('amt').value;
+                const currency = $('currency').value;
+                if (!amount || parseFloat(amount) <= 0) { alert('Enter amount first'); return; }
+
+                await submitNFCPayment({
+                    cardNumber:  nfcCardData.pan,
+                    lastFour:    nfcCardData.lastFour,
+                    cardBrand:   nfcCardData.brand,
+                    expiry:      nfcCardData.expiry || '',
+                    entryMethod: 'nfc',
+                    cryptogram:  nfcCardData.cryptogram || null,
+                    terminalId:  nfcCardData.reader || 'TERM_LAP_001',
+                    amount:      parseFloat(amount),
+                    currency
+                });
+            };
+
+            // ── Panel open / close ─────────────────────────────────────────
+            $('nfcBtn').onclick = () => {
+                const panel = $('nfcPanel');
+                const isOpen = panel.style.display === 'block';
+                panel.style.display = isOpen ? 'none' : 'block';
+                if (!isOpen) {
+                    nfcCardData = null;
+                    $('nfcCardPreview').style.display = 'none';
+                    if (!nfcReaderConnected) {
+                        // Fallback: try Web NFC API (Chrome Android)
+                        tryWebNFC();
+                    } else {
+                        $('nfcStatus').textContent = 'Reader ready — reading automatically…';
+                        // Auto-start reading when panel is opened
+                        setTimeout(() => $('nfcReadBtn').click(), 300);
+                    }
+                }
+            };
+
+            $('nfcCloseBtn').onclick = () => {
+                $('nfcPanel').style.display = 'none';
+            };
+
+            // ── Web NFC API (Chrome Android fallback) ─────────────────────
+            async function tryWebNFC() {
+                if (!('NDEFReader' in window)) return; // not supported — manual form is visible
+                try {
+                    const reader = new NDEFReader();
+                    $('nfcStatus').textContent = '🔍 Scanning via Web NFC…';
+                    await reader.scan();
+                    reader.onreading = (event) => {
+                        let tagData = { entryMethod: 'nfc' };
+                        for (const record of event.message.records) {
+                            if (record.recordType === 'text') {
+                                try { Object.assign(tagData, JSON.parse(new TextDecoder().decode(record.data))); } catch(_) {}
+                            }
+                        }
+                        submitNFCPayment(tagData);
+                    };
+                } catch(e) { /* permission denied — silent, manual form already visible */ }
+            }
+
+            // ── Manual form submit ─────────────────────────────────────────
+            $('nfcSubmitBtn').onclick = async () => {
+                const cardNum = $('nfcCardNum').value.trim().replace(/\s+/g, '');
+                const amount  = $('amt').value;
+                const currency = $('currency').value;
+                if (!cardNum) { alert('Enter a card number or token'); return; }
+                if (!amount || parseFloat(amount) <= 0) { alert('Set the amount first'); return; }
+                await submitNFCPayment({
+                    cardNumber:  cardNum,
+                    amount:      parseFloat(amount),
+                    currency,
+                    expiry:      ($('nfcExpiry').value || '').replace('/', ''),
+                    cvv:         $('nfcCvv').value || null,
+                    entryMethod: $('nfcEntryMethod').value,
+                    terminalId:  $('nfcTerminalId').value || null,
+                });
+            };
+
+            // ── Core submit function (shared by all paths) ─────────────────
+            async function submitNFCPayment(tapData) {
+                const btn = $('nfcSubmitBtn');
+                const payBtn = $('nfcPayNowBtn');
+                const res = $('nfcResult');
+                btn.disabled = true; btn.innerText = '⏳ Processing…';
+                if (payBtn) { payBtn.disabled = true; payBtn.textContent = '⏳ Processing…'; }
+                res.style.display = 'none';
+                $('nfcStatus').textContent = '⚡ Sending to gateway…';
+
+                try {
+                    const resp = await fetch('/api/process-nfc-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(tapData)
+                    });
+                    const data = await resp.json();
+                    res.style.display = 'block';
+
+                    if (data.success && data.transactionId) {
+                        // Mock ISO8583 approved (Stripe disabled) — real DB transaction exists
+                        res.className = 'bg-success';
+                        const txnId  = data.transactionId;
+                        const timeMs = (data.processingTimeMs != null)
+                            ? ` <small style="color:#64748b">${data.processingTimeMs}ms</small>` : '';
+                        res.innerHTML = `✅ <strong>${data.entryModeLabel || 'NFC Tap'}</strong> approved!<br>TXN: <code>${txnId}</code>${timeMs}`;
+                        $('nfcStatus').textContent = '✅ Payment accepted';
+                        $('nfcCardNum').value = ''; $('nfcExpiry').value = ''; $('nfcCvv').value = '';
+                        $('amt').value = '';
+                        nfcCardData = null;
+                        $('nfcCardPreview').style.display = 'none';
+                        if ($('dash').style.display === 'block') loadData();
+
+                    } else if (data.requiresCardConfirm && data.clientSecret && stripe) {
+                        // Stripe is enabled — must confirm with a real card via Stripe Terminal / Elements
+                        // For browser-based flow, confirm using the typed card element
+                        $('nfcStatus').textContent = '💳 Insert/tap card on Stripe Terminal or type card below…';
+                        res.className = 'bg-warning';
+                        res.style.background = '#fef9c3';
+                        res.innerHTML = `⚠️ Card confirmation required.<br>
+                            <small>Use the <strong>💳 Charge Typed Card</strong> button above to complete,<br>
+                            or use a Stripe Terminal for contactless.</small>`;
+
+                        // If we have a card element filled, try confirming with it
+                        if (cardElement) {
+                            $('nfcStatus').textContent = '🔐 Confirming payment with card…';
+                            const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+                                payment_method: { card: cardElement }
+                            });
+                            if (error) {
+                                res.className = 'bg-error';
+                                res.style.background = '';
+                                res.innerText = `❌ ${error.message}`;
+                                $('nfcStatus').textContent = '❌ Card confirmation failed';
+                                // Cancel the PI to keep Stripe dashboard clean
+                                fetch('/api/cancel-payment-intent', {
+                                    method: 'POST', headers: {'Content-Type':'application/json'},
+                                    body: JSON.stringify({ paymentIntentId: data.paymentIntentId })
+                                }).catch(() => {});
+                            } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                                await fetch('/api/record-payment-result', {
+                                    method: 'POST', headers: {'Content-Type':'application/json'},
+                                    body: JSON.stringify({ paymentIntentId: paymentIntent.id, amount: tapData.amount, currency: tapData.currency })
+                                });
+                                res.className = 'bg-success';
+                                res.style.background = '';
+                                res.innerHTML = `✅ <strong>${data.entryModeLabel || 'NFC Tap'}</strong> approved!<br>TXN: <code>${paymentIntent.id}</code>`;
+                                $('nfcStatus').textContent = '✅ Payment accepted';
+                                $('amt').value = '';
+                                nfcCardData = null;
+                                $('nfcCardPreview').style.display = 'none';
+                                if ($('dash').style.display === 'block') loadData();
+                            }
+                        }
+
+                    } else {
+                        res.className = 'bg-error';
+                        res.innerText = `❌ ${data.message || 'Tap declined'}`;
+                        $('nfcStatus').textContent = '❌ Declined';
+                    }
+                } catch (err) {
+                    res.style.display = 'block'; res.className = 'bg-error';
+                    res.innerText = `Error: ${err.message}`;
+                    $('nfcStatus').textContent = 'Connection error';
+                } finally {
+                    btn.disabled = false; btn.innerText = '⚡ Process NFC Payment';
+                    if (payBtn) { payBtn.disabled = false; payBtn.textContent = '⚡ Charge This Card'; }
+                }
+            }
+
+            // Start WebSocket bridge connection on page load
+            connectNfcWs();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+
+==========================================
+PRIMESTACK PAYMENT PROCESSOR - LIVE
+==========================================
+
+✅ ONLY ONE FILE TO RUN: RUN.bat
+
+==========================================
+STEP 1: DOUBLE-CLICK "RUN.bat"
+==========================================
+That's it! This one file does everything:
+- Checks Node.js is installed
+- Installs dependencies if needed
+- Starts the server
+- Opens your browser automatically
+
+==========================================
+STEP 2: LOGIN
+==========================================
+Username: Admin
+Password: Admin123
+
+==========================================
+NOTE:
+==========================================
+- This will NOT work in the Trae IDE preview!
+- You must run RUN.bat ON YOUR ACTUAL COMPUTER!
+- Keep the black window open while using the app!

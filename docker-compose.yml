@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  payment-processor:
+    build: .
+    ports:
+      - "6001:6001"
+    environment:
+      - NODE_ENV=production
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-your_stripe_secret_key}
+    volumes:
+      - ./data:/app/data:rw
+    restart: unless-stopped

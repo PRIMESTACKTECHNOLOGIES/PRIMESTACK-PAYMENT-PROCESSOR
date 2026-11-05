@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        input, button { width: 100%; padding: 10px; margin: 5px 0; font-size: 16px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Login</h1>
+    <div>
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Admin or Merchant">
+    </div>
+    <div>
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Admin123 or Merchant123">
+    </div>
+    <button id="loginBtn">Login</button>
+    <div id="result"></div>
+    <h2>Console Logs</h2>
+    <pre id="logs"></pre>
+
+    <script>
+        const log = (msg) => {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+            console.log(msg);
+        };
+
+        const $ = id => document.getElementById(id);
+
+        const testFetch = async (url, options = {}) => {
+            log(`Testing fetch to ${url}`);
+            try {
+                const res = await fetch(url, options);
+                log(`Response status: ${res.status}`);
+                const data = await res.json();
+                log(`Response data: ${JSON.stringify(data)}`);
+                return data;
+            } catch (e) {
+                log(`Error: ${e.message}`);
+                return null;
+            }
+        };
+
+        $('loginBtn').onclick = async () => {
+            log('=== Starting login ===');
+            const username = $('username').value.trim();
+            const password = $('password').value.trim();
+            log(`Username: ${username}, Password: ${password}`);
+
+            // Test /api/config first
+            log('--- Testing /api/config ---');
+            await testFetch('/api/config');
+
+            // Test /api/settings with password as key
+            log('--- Testing /api/settings with password as key ---');
+            const data = await testFetch('/api/settings', {
+                headers: { 'x-api-key': password }
+            });
+
+            if (data && data.accountNumber) {
+                log('✅ LOGIN SUCCESSFUL!');
+                $('result').innerHTML = '<div class="success">✅ Login successful! Account: ' + data.accountNumber + '</div>';
+            } else {
+                log('❌ LOGIN FAILED!');
+                $('result').innerHTML = '<div class="error">❌ Login failed!</div>';
+            }
+        };
+
+        log('=== Page loaded ===');
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PRIMESTACK POS</string>
+    <string name="hint_amount">0.00</string>
+    <string name="hint_merchant_key">ps_sec_…</string>
+    <string name="hint_server_url">http://192.168.x.x:6001</string>
+    <string name="btn_charge">Charge</string>
+    <string name="btn_tap_to_pay">Tap to Pay</string>
+    <string name="status_ready">Ready — tap card to pay</string>
+    <string name="status_waiting">Waiting for card…</string>
+    <string name="status_reading">Reading card…</string>
+    <string name="status_processing">Processing payment…</string>
+    <string name="status_approved">✓ Approved</string>
+    <string name="status_declined">✗ Declined</string>
+    <string name="status_error">Connection error</string>
+    <string name="label_reader_disconnected">No reader connected</string>
+    <string name="label_reader_connected">Reader ready</string>
+    <string name="pref_merchant_key">pref_merchant_key</string>
+    <string name="pref_server_url">pref_server_url</string>
+    <string name="pref_terminal_id">pref_terminal_id</string>
+    <string name="pref_currency">pref_currency</string>
+</resources>

@@ -1,0 +1,34 @@
+# Environment — contains secrets, NEVER commit this
+.env
+
+# Database files
+data/payments.db
+data/payments.db-wal
+data/payments.db-shm
+data/current-api-key.json
+data/oauth-credentials.json
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Admin password file
+admin password.txt
+
+# Local build / IDE / database files
+.netlify/
+.vscode/
+NFC/*.zip
+NFC/*.apk
+
+# Runtime data (settings, transactions, vault) — generated locally, never commit
+data/settings.json
+data/transactions.json
+data/*.key

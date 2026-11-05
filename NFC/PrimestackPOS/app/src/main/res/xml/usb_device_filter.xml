@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ACS Smart Card Reader USB device filters.
+    VID 0x072F covers the full ACS product line.
+    Common contactless reader PIDs:
+      ACR122U  = 0x2200
+      ACR1252U = 0x223B / 0x223E
+      ACR1281U = 0x2224
+      ACR1251U = 0x221A / 0x2229
+-->
+<resources>
+    <usb-device vendor-id="0x072F" product-id="0x2200" />  <!-- ACR122U -->
+    <usb-device vendor-id="0x072F" product-id="0x223B" />  <!-- ACR1252U-A1 -->
+    <usb-device vendor-id="0x072F" product-id="0x223E" />  <!-- ACR1252U-A2 -->
+    <usb-device vendor-id="0x072F" product-id="0x2244" />  <!-- ACR1252U PICC -->
+    <usb-device vendor-id="0x072F" product-id="0x2224" />  <!-- ACR1281U-C1 -->
+    <usb-device vendor-id="0x072F" product-id="0x221A" />  <!-- ACR1251U-A1 -->
+    <usb-device vendor-id="0x072F" product-id="0x2229" />  <!-- ACR1251U-A2 -->
+    <usb-device vendor-id="0x072F" product-id="0x2303" />  <!-- ACR1552U-M1 -->
+    <usb-device vendor-id="0x072F" product-id="0x2308" />  <!-- ACR1552U-M2 -->
+    <usb-device vendor-id="0x072F" product-id="0x2301" />  <!-- ACR1581U-C1 -->
+    <usb-device vendor-id="0x072F" product-id="0x2307" />  <!-- WalletMate II -->
+</resources>

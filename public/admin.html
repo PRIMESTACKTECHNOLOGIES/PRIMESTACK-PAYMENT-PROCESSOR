@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRIMESTACK — Processor Admin</title>
+    <style>
+        :root {
+            --primary: #2563eb; --success: #16a34a; --error: #dc2626;
+            --warning: #d97706; --bg: #0f172a; --surface: #1e293b;
+            --surface2: #273449; --border: #334155; --text: #f1f5f9;
+            --muted: #94a3b8; --accent: #3b82f6;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ── Login ── */
+        #loginWrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 380px; }
+        .login-box h1 { font-size: 1.4rem; margin-bottom: 6px; }
+        .login-box p { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+
+        /* ── Layout ── */
+        #app { display: none; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; display: flex; flex-direction: column; }
+        .sidebar-logo { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+        .sidebar-logo h2 { font-size: 1rem; color: var(--accent); }
+        .sidebar-logo p { font-size: 0.7rem; color: var(--muted); }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; color: var(--muted); font-size: 0.85rem; border-left: 3px solid transparent; transition: all 0.15s; }
+        .nav-item:hover { color: var(--text); background: var(--surface2); }
+        .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--surface2); font-weight: 600; }
+        .sidebar-footer { margin-top: auto; padding: 15px 20px; border-top: 1px solid var(--border); }
+        .main { margin-left: 220px; padding: 24px; min-height: 100vh; }
+
+        /* ── Components ── */
+        .page { display: none; }
+        .page.active { display: block; }
+        h2.page-title { font-size: 1.3rem; margin-bottom: 4px; }
+        p.page-subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+        .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
+        .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .card-title { font-size: 0.95rem; font-weight: 600; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 12px; font-size: 0.83rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--surface2); }
+
+        .badge { padding: 3px 8px; border-radius: 99px; font-size: 0.68rem; font-weight: 600; display: inline-block; }
+        .badge-green { background: #14532d; color: #4ade80; }
+        .badge-red { background: #450a0a; color: #f87171; }
+        .badge-yellow { background: #422006; color: #fbbf24; }
+        .badge-blue { background: #1e3a5f; color: #60a5fa; }
+
+        /* ── Forms ── */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 6px; color: var(--text); font-size: 0.85rem; outline: none;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+        .form-group select option { background: var(--surface2); }
+
+        /* ── Buttons ── */
+        .btn { padding: 8px 16px; border-radius: 6px; font-size: 0.83rem; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: #15803d; color: white; }
+        .btn-danger { background: #b91c1c; color: white; }
+        .btn-warning { background: #b45309; color: white; }
+        .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+        .btn-sm { padding: 5px 10px; font-size: 0.75rem; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* ── Modal ── */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin-bottom: 16px; font-size: 1.1rem; }
+
+        /* ── Keys display ── */
+        .key-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: 'Consolas', monospace; font-size: 0.75rem; word-break: break-all; margin-bottom: 8px; color: #4ade80; }
+
+        /* ── Toast ── */
+        #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 0.83rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 340px; }
+        #toast.show { opacity: 1; }
+        #toast.success { border-color: #4ade80; }
+        #toast.error { border-color: #f87171; }
+
+        /* ── Misc ── */
+        .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 0.85rem; }
+        .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+        .text-green { color: #4ade80; }
+        .text-red { color: #f87171; }
+        .text-yellow { color: #fbbf24; }
+        .text-muted { color: var(--muted); }
+        .mono { font-family: 'Consolas', monospace; }
+    </style>
+</head>
+<body>
+
+<!-- ── Login Screen ───────────────────────────────────────────────────────── -->
+<div id="loginWrap">
+    <div class="login-box">
+        <h1>PRIMESTACK</h1>
+        <p>Processor Admin Panel — Enter your admin key</p>
+        <div class="form-group">
+            <label>Admin API Key</label>
+            <input type="password" id="loginKey" placeholder="Your ADMIN_API_KEY from .env" />
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px" id="loginBtn">Login</button>
+        <div id="loginErr" style="color:#f87171;font-size:0.78rem;margin-top:8px;display:none;"></div>
+    </div>
+</div>
+
+<!-- ── Main App ───────────────────────────────────────────────────────────── -->
+<div id="app">
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <h2>PRIMESTACK</h2>
+            <p>Processor Admin</p>
+        </div>
+        <div class="nav-item active" data-page="overview">📊 Overview</div>
+        <div class="nav-item" data-page="merchants">🏪 Merchants</div>
+        <div class="nav-item" data-page="settlement">💰 Settlement</div>
+        <div class="nav-item" data-page="transactions">💳 Transactions</div>
+        <div class="nav-item" data-page="newmerchant">➕ Add Merchant</div>
+        <div class="sidebar-footer">
+            <button class="btn btn-ghost btn-sm" id="logoutBtn" style="width:100%">Logout</button>
+        </div>
+    </div>
+
+    <div class="main">
+
+        <!-- ── Overview ─────────────────────────────────────────────────── -->
+        <div class="page active" id="page-overview">
+            <h2 class="page-title">Overview</h2>
+            <p class="page-subtitle">Your processor performance at a glance</p>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Merchants</div>
+                    <div class="stat-value" id="ov-merchants">—</div>
+                    <div class="stat-sub">Active accounts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Platform Revenue</div>
+                    <div class="stat-value text-green" id="ov-revenue">—</div>
+                    <div class="stat-sub">Your fees collected</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Processed</div>
+                    <div class="stat-value" id="ov-volume">—</div>
+                    <div class="stat-sub">Gross transaction volume</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Payouts</div>
+                    <div class="stat-value text-yellow" id="ov-pending">—</div>
+                    <div class="stat-sub">Owed to merchants</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Merchant Balances</span>
+                    <button class="btn btn-ghost btn-sm" onclick="loadOverview()">Refresh</button>
+                </div>
+                <table>
+                    <thead><tr><th>Merchant</th><th>Email</th><th>Currency</th><th>Unsettled Balance</th><th>Action</th></tr></thead>
+                    <tbody id="ov-merchants-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── Merchants ─────────────────────────────────────────────────── -->
+        <div class="page" id="page-merchants">
+            <h2 class="page-title">Merchants</h2>
+            <p class="page-subtitle">Manage all your merchant accounts</p>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">All Merchants</span>
+                    <button class="btn btn-ghost btn-sm" onclick="loadMerchants()">Refresh</button>
+                </div>
+                <table>
+                    <thead><tr><th>Business</th><th>Email</th><th>Country</th><th>Fee %</th><th>Offline</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="merchants-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── Settlement ────────────────────────────────────────────────── -->
+        <div class="page" id="page-settlement">
+            <h2 class="page-title">Settlement</h2>
+            <p class="page-subtitle">Pay your merchants their earned funds (gross − your fee)</p>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(3,1fr)">
+                <div class="stat-card">
+                    <div class="stat-label">Your Revenue (All Time)</div>
+                    <div class="stat-value text-green" id="set-revenue">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Gross Processed</div>
+                    <div class="stat-value" id="set-gross">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Settlements</div>
+                    <div class="stat-value text-yellow" id="set-pending-count">—</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Merchant Balances — What You Owe</span>
+                    <button class="btn btn-ghost btn-sm" onclick="loadSettlement()">Refresh</button>
+                </div>
+                <table>
+                    <thead><tr><th>Merchant</th><th>Currency</th><th>Gross</th><th>Your Fee</th><th>Net Payable</th><th>Txns</th><th>Pay Now</th></tr></thead>
+                    <tbody id="settlement-table"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span class="card-title">Settlement Batch History</span></div>
+                <table>
+                    <thead><tr><th>Date</th><th>Merchant</th><th>Currency</th><th>Gross</th><th>Fee</th><th>Net Paid</th><th>Status</th><th>Reference</th></tr></thead>
+                    <tbody id="batches-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── Transactions ──────────────────────────────────────────────── -->
+        <div class="page" id="page-transactions">
+            <h2 class="page-title">All Transactions</h2>
+            <p class="page-subtitle">Every transaction across all merchants</p>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Transactions</span>
+                    <button class="btn btn-ghost btn-sm" onclick="loadTransactions()">Refresh</button>
+                </div>
+                <table>
+                    <thead><tr><th>Date</th><th>Merchant</th><th>Card</th><th>Amount</th><th>Status</th><th>Gateway</th><th>Settlement</th></tr></thead>
+                    <tbody id="txn-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── Add Merchant ──────────────────────────────────────────────── -->
+        <div class="page" id="page-newmerchant">
+            <h2 class="page-title">Add New Merchant</h2>
+            <p class="page-subtitle">Register a new merchant — they'll receive their API keys</p>
+
+            <div class="card" style="max-width:600px">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Business Name *</label>
+                        <input type="text" id="nm-biz" placeholder="Coffee Shop LLC" />
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="nm-email" placeholder="owner@business.com" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" id="nm-country" placeholder="US" />
+                    </div>
+                    <div class="form-group">
+                        <label>Default Currency</label>
+                        <select id="nm-currency">
+                            <option value="USD">USD</option><option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option><option value="CAD">CAD</option>
+                            <option value="AUD">AUD</option><option value="SGD">SGD</option>
+                            <option value="HKD">HKD</option><option value="JPY">JPY</option>
+                            <option value="MYR">MYR</option><option value="INR">INR</option>
+                            <option value="AED">AED</option><option value="SAR">SAR</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Contact Name</label>
+                        <input type="text" id="nm-contact" placeholder="John Smith" />
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="text" id="nm-phone" placeholder="+1234567890" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Platform Fee % (your cut)</label>
+                        <input type="number" id="nm-fee" value="1.0" step="0.1" min="0" max="10" />
+                    </div>
+                    <div class="form-group">
+                        <label>Offline Single Limit</label>
+                        <input type="number" id="nm-offline-limit" value="500" min="0" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Offline Daily Limit</label>
+                        <input type="number" id="nm-offline-daily" value="2000" min="0" />
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:14px">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input type="checkbox" id="nm-offline-enabled" checked style="width:auto" />
+                            Enable Offline Payments
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-success" id="nm-submit" style="width:100%;padding:12px">Register Merchant</button>
+            </div>
+        </div>
+
+    </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── Merchant Detail Modal ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="merchantModal">
+    <div class="modal-box">
+        <h3 id="modal-title">Merchant Details</h3>
+        <div id="modal-body"></div>
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap" id="modal-actions"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%" onclick="closeModal('merchantModal')">Close</button>
+    </div>
+</div>
+
+<!-- ── Keys Modal ────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="keysModal">
+    <div class="modal-box">
+        <h3>🔑 New Keys Issued</h3>
+        <p style="color:var(--muted);font-size:0.82rem;margin-bottom:16px">Save these now — the secret key will never be shown again.</p>
+        <div class="form-group">
+            <label>Publishable Key (Android app / frontend)</label>
+            <div class="key-box" id="km-pub"></div>
+            <button class="btn btn-ghost btn-sm" onclick="copyText('km-pub')">Copy</button>
+        </div>
+        <div class="form-group">
+            <label>Secret Key (server-side only)</label>
+            <div class="key-box" id="km-sec" style="color:#fbbf24"></div>
+            <button class="btn btn-ghost btn-sm" onclick="copyText('km-sec')">Copy</button>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="closeModal('keysModal')">I have saved these keys</button>
+    </div>
+</div>
+
+<!-- ── Pay Merchant Modal ────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="payModal">
+    <div class="modal-box">
+        <h3>💸 Create Settlement Payout</h3>
+        <p style="color:var(--muted);font-size:0.82rem;margin-bottom:16px" id="pay-subtitle"></p>
+        <input type="hidden" id="pay-merchantId" />
+        <div class="form-group">
+            <label>Currency</label>
+            <input type="text" id="pay-currency" placeholder="USD" maxlength="3" style="text-transform:uppercase" />
+        </div>
+        <div class="form-group">
+            <label>Notes (optional)</label>
+            <input type="text" id="pay-notes" placeholder="Weekly settlement" />
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-success" id="pay-submit">Create Payout</button>
+            <button class="btn btn-ghost" onclick="closeModal('payModal')">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const $ = id => document.getElementById(id);
+    document.addEventListener('DOMContentLoaded', () => {
+    let adminKey = '';
+
+    const api = async (method, path, body) => {
+        const r = await fetch(path, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'x-api-key': adminKey },
+            body: body ? JSON.stringify(body) : undefined
+        });
+        return r.json();
+    };
+
+    const toast = (msg, type = 'success') => {
+        const el = $('toast');
+        el.textContent = msg;
+        el.className = `show ${type}`;
+        setTimeout(() => el.className = '', 3000);
+    };
+
+    const fmt = (n, currency = '') => {
+        const v = parseFloat(n || 0).toFixed(2);
+        return currency ? `${currency} ${v}` : `$${v}`;
+    };
+
+    window.openModal = id => $(id).classList.add('open');
+    window.closeModal = id => $(id).classList.remove('open');
+
+    window.copyText = id => {
+        navigator.clipboard.writeText($(id).textContent.trim())
+            .then(() => toast('Copied!'))
+            .catch(() => toast('Copy failed', 'error'));
+    };
+
+    const badgeStatus = s => {
+        const map = { active: 'badge-green', suspended: 'badge-red', Approved: 'badge-green', Declined: 'badge-red', Pending: 'badge-yellow', Completed: 'badge-green', Failed: 'badge-red', paid: 'badge-green', created: 'badge-blue' };
+        return `<span class="badge ${map[s] || 'badge-blue'}">${s}</span>`;
+    };
+
+    // ── Login ─────────────────────────────────────────────────────────────────
+    $('loginBtn').onclick = async () => {
+        const key = $('loginKey').value.trim();
+        if (!key) return;
+        adminKey = key;
+        const r = await api('GET', '/api/merchants');
+        if (r.success !== undefined && r.success === false && r.message === 'Authentication failed') {
+            $('loginErr').textContent = 'Invalid admin key';
+            $('loginErr').style.display = 'block';
+            adminKey = '';
+            return;
+        }
+        $('loginWrap').style.display = 'none';
+        $('app').style.display = 'block';
+        loadOverview();
+    };
+
+    $('loginKey').onkeydown = e => { if (e.key === 'Enter') $('loginBtn').click(); };
+
+    $('logoutBtn').onclick = () => {
+        adminKey = '';
+        $('app').style.display = 'none';
+        $('loginWrap').style.display = 'flex';
+        $('loginKey').value = '';
+    };
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = () => {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            item.classList.add('active');
+            $(`page-${item.dataset.page}`).classList.add('active');
+            const loaders = { overview: loadOverview, merchants: loadMerchants, settlement: loadSettlement, transactions: loadTransactions };
+            if (loaders[item.dataset.page]) loaders[item.dataset.page]();
+        };
+    });
+
+    // ── Overview ──────────────────────────────────────────────────────────────
+    async function loadOverview() {
+        const [merchantsR, settlementR] = await Promise.all([
+            api('GET', '/api/merchants'),
+            api('GET', '/api/settlement/overview')
+        ]);
+
+        const merchants = merchantsR.merchants || [];
+        $('ov-merchants').textContent = merchants.filter(m => m.status === 'active').length;
+
+        if (settlementR.success) {
+            const rev = settlementR.yourRevenue || [];
+            const totalRevenue = rev.reduce((s, r) => s + (r.total_fees || 0), 0);
+            const totalGross = rev.reduce((s, r) => s + (r.total_gross || 0), 0);
+            $('ov-revenue').textContent = fmt(totalRevenue);
+            $('ov-volume').textContent = fmt(totalGross);
+
+            let totalPending = 0;
+            const tbody = $('ov-merchants-table');
+            tbody.innerHTML = '';
+            for (const m of settlementR.merchants || []) {
+                for (const b of m.unsettledBalance || []) {
+                    totalPending += b.net_payable || 0;
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${m.businessName}</strong></td>
+                        <td class="text-muted">${m.email}</td>
+                        <td>${b.currency}</td>
+                        <td class="text-green">${fmt(b.net_payable)}</td>
+                        <td><button class="btn btn-success btn-sm" onclick="openPayModal('${m.merchantId}','${m.businessName}','${b.currency}')">Pay Now</button></td>
+                    </tr>`;
+                }
+                if ((m.unsettledBalance || []).length === 0) {
+                    tbody.innerHTML += `<tr><td><strong>${m.businessName}</strong></td><td class="text-muted">${m.email}</td><td colspan="3" class="text-muted">No unsettled balance</td></tr>`;
+                }
+            }
+            $('ov-pending').textContent = fmt(totalPending);
+        }
+    }
+
+    // ── Merchants ─────────────────────────────────────────────────────────────
+    async function loadMerchants() {
+        const r = await api('GET', '/api/merchants');
+        const tbody = $('merchants-table');
+        tbody.innerHTML = '';
+        for (const m of r.merchants || []) {
+            tbody.innerHTML += `<tr>
+                <td><strong>${m.business_name}</strong><br><span class="mono text-muted" style="font-size:0.7rem">${m.id}</span></td>
+                <td>${m.email}</td>
+                <td>${m.country || '—'}</td>
+                <td>${m.platform_fee_percent}%</td>
+                <td>${m.offline_enabled ? '<span class="badge badge-green">ON</span>' : '<span class="badge badge-red">OFF</span>'}</td>
+                <td>${badgeStatus(m.status)}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-ghost btn-sm" onclick="viewMerchant('${m.id}')">View</button>
+                        <button class="btn btn-warning btn-sm" onclick="rotateKeys('${m.id}')">Rotate Keys</button>
+                        ${m.status === 'active'
+                            ? `<button class="btn btn-danger btn-sm" onclick="suspendMerchant('${m.id}')">Suspend</button>`
+                            : `<button class="btn btn-success btn-sm" onclick="reactivateMerchant('${m.id}')">Reactivate</button>`
+                        }
+                    </div>
+                </td>
+            </tr>`;
+        }
+        if (!r.merchants?.length) tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No merchants yet. Add one!</td></tr>';
+    }
+
+    async function viewMerchant(id) {
+        const [mR, statsR] = await Promise.all([
+            api('GET', `/api/merchants/${id}`),
+            api('GET', `/api/merchants/${id}/stats`)
+        ]);
+        const m = mR.merchant;
+        const stats = statsR.transactions || {};
+        $('modal-title').textContent = m.business_name;
+        $('modal-body').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div><div class="stat-label">Merchant ID</div><div class="mono" style="font-size:0.75rem">${m.id}</div></div>
+                <div><div class="stat-label">Email</div><div>${m.email}</div></div>
+                <div><div class="stat-label">Status</div><div>${badgeStatus(m.status)}</div></div>
+                <div><div class="stat-label">Currency</div><div>${m.currency}</div></div>
+                <div><div class="stat-label">Platform Fee</div><div>${m.platform_fee_percent}%</div></div>
+                <div><div class="stat-label">Offline</div><div>${m.offline_enabled ? 'Enabled' : 'Disabled'} (limit: ${m.offline_limit})</div></div>
+                <div><div class="stat-label">Pub Key</div><div class="mono text-muted" style="font-size:0.7rem">${m.publishable_key_preview || '—'}</div></div>
+                <div><div class="stat-label">Secret Key</div><div class="mono text-muted" style="font-size:0.7rem">${m.secret_key_preview || '—'}</div></div>
+            </div>
+            <hr class="divider">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div><div class="stat-label">Total Txns</div><div class="stat-value" style="font-size:1.1rem">${stats.total_transactions || 0}</div></div>
+                <div><div class="stat-label">Approved</div><div class="stat-value text-green" style="font-size:1.1rem">${stats.approved || 0}</div></div>
+                <div><div class="stat-label">Volume</div><div class="stat-value" style="font-size:1.1rem">${fmt(stats.total_volume)}</div></div>
+            </div>
+        `;
+        $('modal-actions').innerHTML = `
+            <button class="btn btn-warning btn-sm" onclick="rotateKeys('${m.id}');closeModal('merchantModal')">Rotate Keys</button>
+            ${m.status === 'active'
+                ? `<button class="btn btn-danger btn-sm" onclick="suspendMerchant('${m.id}');closeModal('merchantModal')">Suspend</button>`
+                : `<button class="btn btn-success btn-sm" onclick="reactivateMerchant('${m.id}');closeModal('merchantModal')">Reactivate</button>`
+            }
+        `;
+        openModal('merchantModal');
+    }
+
+    async function rotateKeys(merchantId) {
+        if (!confirm('Rotate keys? Old keys will be invalidated immediately.')) return;
+        const r = await api('POST', `/api/merchants/${merchantId}/rotate-keys`);
+        if (r.success) {
+            $('km-pub').textContent = r.keys.publishableKey;
+            $('km-sec').textContent = r.keys.secretKey;
+            openModal('keysModal');
+            toast('Keys rotated successfully');
+        } else toast(r.message || 'Failed', 'error');
+    }
+
+    async function suspendMerchant(merchantId) {
+        const reason = prompt('Reason for suspension (optional):') || '';
+        const r = await api('POST', `/api/merchants/${merchantId}/suspend`, { reason });
+        if (r.success) { toast('Merchant suspended'); loadMerchants(); }
+        else toast(r.message || 'Failed', 'error');
+    }
+
+    async function reactivateMerchant(merchantId) {
+        const r = await api('POST', `/api/merchants/${merchantId}/reactivate`);
+        if (r.success) { toast('Merchant reactivated'); loadMerchants(); }
+        else toast(r.message || 'Failed', 'error');
+    }
+
+    // ── Settlement ────────────────────────────────────────────────────────────
+    async function loadSettlement() {
+        const [overviewR, batchR] = await Promise.all([
+            api('GET', '/api/settlement/overview'),
+            api('GET', '/api/settlement/batches')
+        ]);
+
+        if (overviewR.success) {
+            const rev = overviewR.yourRevenue || [];
+            $('set-revenue').textContent = fmt(rev.reduce((s,r) => s+(r.total_fees||0), 0));
+            $('set-gross').textContent = fmt(rev.reduce((s,r) => s+(r.total_gross||0), 0));
+
+            const settleTbody = $('settlement-table');
+            settleTbody.innerHTML = '';
+            let pendingCount = 0;
+            for (const m of overviewR.merchants || []) {
+                for (const b of m.unsettledBalance || []) {
+                    if (b.net_payable > 0) pendingCount++;
+                    settleTbody.innerHTML += `<tr>
+                        <td><strong>${m.businessName}</strong></td>
+                        <td>${b.currency}</td>
+                        <td>${fmt(b.gross_amount)}</td>
+                        <td class="text-green">${fmt(b.total_fees)}</td>
+                        <td class="text-yellow"><strong>${fmt(b.net_payable)}</strong></td>
+                        <td>${b.transaction_count}</td>
+                        <td><button class="btn btn-success btn-sm" onclick="openPayModal('${m.merchantId}','${m.businessName}','${b.currency}')">Pay</button></td>
+                    </tr>`;
+                }
+            }
+            $('set-pending-count').textContent = pendingCount;
+        }
+
+        if (batchR.success) {
+            const tbody = $('batches-table');
+            tbody.innerHTML = '';
+            for (const b of batchR.batches || []) {
+                tbody.innerHTML += `<tr>
+                    <td>${new Date(b.created_at).toLocaleDateString()}</td>
+                    <td>${b.business_name || b.merchant_id}</td>
+                    <td>${b.currency}</td>
+                    <td>${fmt(b.gross_amount)}</td>
+                    <td class="text-green">${fmt(b.fee_amount)}</td>
+                    <td class="text-yellow"><strong>${fmt(b.net_amount)}</strong></td>
+                    <td>${badgeStatus(b.status)}</td>
+                    <td>
+                        ${b.status !== 'paid'
+                            ? `<button class="btn btn-ghost btn-sm" onclick="markPaid('${b.payout_id}')">Mark Paid</button>`
+                            : `<span class="text-muted mono" style="font-size:0.7rem">${b.payment_reference || '—'}</span>`
+                        }
+                    </td>
+                </tr>`;
+            }
+            if (!batchR.batches?.length) tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No settlement batches yet</td></tr>';
+        }
+    }
+
+    function openPayModal(merchantId, businessName, currency) {
+        $('pay-merchantId').value = merchantId;
+        $('pay-currency').value = currency;
+        $('pay-subtitle').textContent = `Create payout for ${businessName}`;
+        openModal('payModal');
+    }
+
+    $('pay-submit').onclick = async () => {
+        const merchantId = $('pay-merchantId').value;
+        const currency = $('pay-currency').value.toUpperCase();
+        const notes = $('pay-notes').value;
+        if (!currency) { toast('Enter currency', 'error'); return; }
+        const r = await api('POST', `/api/settlement/${merchantId}/pay`, { currency, notes });
+        if (r.success) {
+            toast(`Payout created: ${fmt(r.netPayable)} ${currency}`);
+            closeModal('payModal');
+            loadSettlement();
+        } else toast(r.message || 'Failed', 'error');
+    };
+
+    async function markPaid(payoutId) {
+        const ref = prompt('Payment reference (e.g. bank transfer ID):') || '';
+        const r = await api('POST', `/api/settlement/batches/${payoutId}/mark-paid`, { paymentReference: ref });
+        if (r.success) { toast('Marked as paid'); loadSettlement(); }
+        else toast(r.message || 'Failed', 'error');
+    }
+
+    // ── Transactions ──────────────────────────────────────────────────────────
+    async function loadTransactions() {
+        const r = await api('GET', '/api/transactions');
+        const tbody = $('txn-table');
+        tbody.innerHTML = '';
+        for (const t of (Array.isArray(r) ? r : []).slice(0, 200)) {
+            tbody.innerHTML += `<tr>
+                <td>${new Date(t.timestamp).toLocaleDateString()}</td>
+                <td class="mono text-muted" style="font-size:0.75rem">${t.merchantAccount || '—'}</td>
+                <td>${t.cardType} (*${t.lastFour})</td>
+                <td>${t.currency} ${parseFloat(t.amount).toFixed(2)}</td>
+                <td>${badgeStatus(t.status)}</td>
+                <td class="text-muted">${t.gatewayProvider}</td>
+                <td>${badgeStatus(t.settlementStatus)}</td>
+            </tr>`;
+        }
+        if (!r.length) tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No transactions yet</td></tr>';
+    }
+
+    // ── Add Merchant ──────────────────────────────────────────────────────────
+    $('nm-submit').onclick = async () => {
+        const btn = $('nm-submit');
+        btn.disabled = true; btn.textContent = 'Registering...';
+        const body = {
+            businessName: $('nm-biz').value.trim(),
+            email: $('nm-email').value.trim(),
+            country: $('nm-country').value.trim() || undefined,
+            currency: $('nm-currency').value,
+            contactName: $('nm-contact').value.trim() || undefined,
+            phone: $('nm-phone').value.trim() || undefined,
+            platformFeePercent: parseFloat($('nm-fee').value) || 1.0,
+            offlineEnabled: $('nm-offline-enabled').checked,
+            offlineLimit: parseFloat($('nm-offline-limit').value) || 500,
+            offlineDailyLimit: parseFloat($('nm-offline-daily').value) || 2000
+        };
+        if (!body.businessName || !body.email) {
+            toast('Business name and email required', 'error');
+            btn.disabled = false; btn.textContent = 'Register Merchant';
+            return;
+        }
+        const r = await api('POST', '/api/merchants/register', body);
+        btn.disabled = false; btn.textContent = 'Register Merchant';
+        if (r.success) {
+            $('km-pub').textContent = r.merchant.keys.publishableKey;
+            $('km-sec').textContent = r.merchant.keys.secretKey;
+            openModal('keysModal');
+            toast(`${body.businessName} registered!`);
+            ['nm-biz','nm-email','nm-country','nm-contact','nm-phone'].forEach(id => $(id).value = '');
+        } else toast(r.message || 'Registration failed', 'error');
+    };
+
+    
+    // Make these functions globally accessible for HTML onclick attributes
+    window.loadOverview = loadOverview;
+    window.loadMerchants = loadMerchants;
+    window.loadSettlement = loadSettlement;
+    window.loadTransactions = loadTransactions;
+    window.openPayModal = openPayModal;
+    window.markPaid = markPaid;
+    window.rotateKeys = rotateKeys;
+    window.suspendMerchant = suspendMerchant;
+    window.reactivateMerchant = reactivateMerchant;
+    window.viewMerchant = viewMerchant;
+
+}); // end DOMContentLoaded
+    </script>
+</body>
+</html>

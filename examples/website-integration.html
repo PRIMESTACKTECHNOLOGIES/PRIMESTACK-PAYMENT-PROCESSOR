@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PRIMESTACK Payment Processor - Website Integration Example</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #f5f7fa;
+        }
+
+        .example-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        h1, h2 {
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .product-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .product-price {
+            font-size: 2rem;
+            color: #059669;
+            font-weight: bold;
+        }
+
+        .buy-btn {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .buy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            color: #dc2626;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .iframe-container {
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        .api-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .credentials-note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛍️ PRIMESTACK PAYMENT PROCESSOR - Website Integration</h1>
+
+    <div class="example-section">
+        <div class="credentials-note">
+            <h3>🔑 Before You Start</h3>
+            <p>Get your credentials from the PRIMESTACK Merchant Dashboard (Settings tab):</p>
+            <ul>
+                <li><strong>Client ID</strong></li>
+                <li><strong>Client Secret</strong></li>
+                <li><strong>API Key</strong></li>
+            </ul>
+        </div>
+
+        <h2>✅ Option 1: Full Payment Terminal (iFrame)</h2>
+        <p>Embed the complete payment terminal directly into your website:</p>
+
+        <div class="api-section">
+            <h3>Code Example</h3>
+            <pre>&lt;iframe 
+    src="https://your-primestack-domain.com"
+    width="100%"
+    height="600px"
+    style="border: 3px solid #e2e8f0; border-radius: 12px;"
+&gt;&lt;/iframe&gt;</pre>
+        </div>
+    </div>
+
+    <div class="example-section">
+        <h2>✅ Option 2: Simple Checkout Button</h2>
+        <p>Add a checkout button to your product pages:</p>
+
+        <div class="product-card">
+            <div class="product-info">
+                <div class="product-name">Premium Subscription</div>
+                <div class="product-price">$29.99/month</div>
+            </div>
+            <button class="buy-btn" onclick="openCheckout()">Buy Now</button>
+        </div>
+
+        <div class="api-section">
+            <h3>HTML + JavaScript Code</h3>
+            <pre>&lt;button onclick="openCheckout()" style="
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+"&gt;
+    Buy Now - $29.99
+&lt;/button&gt;
+
+&lt;script&gt;
+function openCheckout() {
+    // Open payment terminal in popup or redirect
+    window.open('https://your-primestack-domain.com', '_blank', 'width=500,height=700');
+}
+&lt;/script&gt;</pre>
+        </div>
+    </div>
+
+    <div class="example-section">
+        <h2>✅ Option 3: Direct API Integration</h2>
+        <p>Build your own custom checkout form using the API:</p>
+
+        <div class="api-section">
+            <h3>Custom Form Example</h3>
+            <div style="max-width: 400px; margin: 0 auto;">
+                <div style="background: white; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px;">Card Number</label>
+                        <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" 
+                               style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">Expiry</label>
+                            <input type="text" id="expiry" placeholder="MM/YY"
+                                   style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">CVV</label>
+                            <input type="text" id="cvv" placeholder="123"
+                                   style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <button onclick="processCustomPayment()" 
+                            style="width: 100%; background: linear-gradient(135deg, #059669, #047857); 
+                                   color: white; border: none; padding: 14px; border-radius: 8px; 
+                                   font-weight: 600; font-size: 1rem; cursor: pointer;">
+                        Pay $49.99
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openCheckout() {
+            window.open('http://localhost:6001', '_blank', 'width=500,height=700');
+        }
+
+        async function processCustomPayment() {
+            const amount = 49.99;
+            
+            // Replace with your PRIMESTACK credentials from Settings tab
+            const credentials = {
+                clientId: 'YOUR_CLIENT_ID',
+                clientSecret: 'YOUR_CLIENT_SECRET',
+                apiKey: 'YOUR_API_KEY'
+            };
+
+            const cardDetails = {
+                cardNumber: document.getElementById('cardNumber').value,
+                expiryDate: document.getElementById('expiry').value,
+                cvv: document.getElementById('cvv').value,
+                cardHolder: 'Customer'
+            };
+
+            try {
+                const response = await fetch('http://localhost:6001/api/process-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-client-id': credentials.clientId,
+                        'x-client-secret': credentials.clientSecret,
+                        'x-api-key': credentials.apiKey
+                    },
+                    body: JSON.stringify({
+                        card: cardDetails,
+                        amount: amount,
+                        currency: 'USD'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Payment successful!');
+                } else {
+                    alert('❌ Payment failed: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
