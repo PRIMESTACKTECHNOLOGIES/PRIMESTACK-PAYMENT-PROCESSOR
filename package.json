@@ -15,7 +15,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@pokusew/pcsclite": "0.6.0",
     "better-sqlite3": "^12.10.0",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",

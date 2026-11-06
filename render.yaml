@@ -1,0 +1,62 @@
+# Render Blueprint — PrimeStack Payment Processor
+#
+# Deploy: push this file to the repo's default branch, then in the Render
+# dashboard choose: New > Blueprint > select this repository.
+#
+# Secrets are declared with `sync: false`, so Render prompts you for their
+# values during setup and stores them securely (they are never committed).
+
+services:
+  - type: web
+    name: primestack-payment-processor
+    runtime: node
+    plan: starter          # a persistent disk requires a paid plan
+    region: frankfurt      # closest region to Dubai; change if needed
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/v1/status
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+
+      # SQLite must live on the persistent disk mounted below.
+      - key: DATA_DIR
+        value: /var/data
+
+      # Simulation is disabled in production (real acquirer/gateway only).
+      - key: ALLOW_SIMULATION
+        value: "false"
+
+      # Auth lockout defaults
+      - key: AUTH_LOCKOUT_THRESHOLD
+        value: "5"
+      - key: AUTH_LOCKOUT_DURATION_MS
+        value: "900000"
+
+      # ── Secrets — provide values in the Render dashboard during setup ──
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_RETURN_URL
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: ADMIN_MFA_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      # Comma-separated allowed browser origins, e.g. https://portal.example.com
+      - key: CORS_ORIGINS
+        sync: false
+
+    disk:
+      name: payment-data
+      mountPath: /var/data
+      sizeGB: 1
