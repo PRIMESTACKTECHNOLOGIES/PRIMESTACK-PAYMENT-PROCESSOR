@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+
+# Local environment / secrets
+.env
+
+# Local runtime data (container creates its own /app/data)
+data
+
+# VCS and tooling
+.git
+.gitignore
+
+# Large unrelated assets (Android/NFC tooling) not needed by the server
+NFC
